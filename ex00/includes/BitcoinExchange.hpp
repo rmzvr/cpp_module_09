@@ -1,8 +1,20 @@
-#ifndef BITCOIN_EXCHANGE_HPP
-# define BITCOIN_EXCHANGE_HPP
+#pragma once
 
-# include <iostream>
+#include <map>
+#include <ctime>
+#include <string>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <iostream>
 
+class BitcoinExchange
+{
+	private:
+		std::map<std::string, float>	_exchangeRates;
+	public:
+		// BitcoinExchange();
+		// ~BitcoinExchange();
 
-#endif
-
+		void	processCSVFile();
+};
