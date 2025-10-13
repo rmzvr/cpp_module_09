@@ -26,7 +26,20 @@ const char * DateOutOfRangeException::what() const noexcept
 	return "number out of range.";
 }
 
-double	BitcoinExchange::_parseNumericValue( std::string const & str )
+void BitcoinExchange::_validateDate(std::string const &date)
+{
+	tm	tm = {};
+	std::istringstream	date_in_stream(date);
+
+	date_in_stream >> std::get_time(&tm, "%Y-%m-%d");
+
+	if (date_in_stream.fail() == true)
+	{
+		throw BadInputException();
+	}
+}
+
+double BitcoinExchange::_parseNumericValue( std::string const &str )
 {
 	double		result;
 	std::size_t	pos;
@@ -36,12 +49,12 @@ double	BitcoinExchange::_parseNumericValue( std::string const & str )
 		result = std::stod(str, &pos);
 		if (pos != str.length())
 		{
-			throw BadInputException();
+			throw BadInputException(); //! FIX
 		}
 	}
 	catch(...)
 	{
-		throw BadInputException(); //! ADD DETAILS
+		throw BadInputException();
 	}
 	if (result < 0)
 	{
@@ -66,29 +79,28 @@ void BitcoinExchange::_parseCSVFile()
 
 	std::string	line;
 	std::getline(file, line);
-	// double		coverted_exchange_rate;
-	
+
 	while (std::getline(file, line))
 	{
-		std::string			date_value;
-		std::string			exchange_rate_value;
-		std::istringstream	ss(line);
-		if (std::getline(ss, date_value, ',') && std::getline(ss, exchange_rate_value))
+		std::string			date;
+		std::string			rate;
+		std::istringstream	line_stream(line);
+
+		if (std::getline(line_stream, date, ',') && std::getline(line_stream, rate))
 		{
 			try
 			{
-				// coverted_exchange_rate = this->_parseNumericValue(exchange_rate_value);
-				this->_exchangeRates[date_value] = std::stod(exchange_rate_value);
+				this->_exchangeData[date] = std::stod(rate);
 			}
 			catch(const std::exception& e)
 			{
-				std::cerr << "Error: " << e.what() << '\n';
+				std::cerr << "Error: " << e.what() << std::endl;
 			}
 		}
 	}
 }
 
-void BitcoinExchange::_parseInputFile(std::string const &filename)
+void BitcoinExchange::_parseInputFile( std::string const &filename )
 {
 	std::ifstream	file(filename);
 
@@ -96,45 +108,85 @@ void BitcoinExchange::_parseInputFile(std::string const &filename)
 	{
 		throw FailedToOpenFileException();
 	}
-	std::cout << "File opened!" << std::endl;
+
+	std::string	line;
+	std::getline(file, line); //! ADD VALIDATION OF HEADER
+
+	while (std::getline(file, line))
+	{
+		std::string			date;
+		std::string			amount;
+		std::istringstream	line_stream(line);
+
+		if (std::getline(line_stream, date, ',') && std::getline(line_stream, amount))
+		{
+			this->_inputData[date] = amount;
+			// std::cerr << "Error: " << e.what() << std::endl; //! HANDLE INVALID LINE READ
+		}
+	}
 }
 
-std::map<std::string, double>::iterator BitcoinExchange::_findRecord( std::string const &date_value )
+std::map<std::string, double>::iterator BitcoinExchange::_findRecord( std::string const &date )
 {
-	tm	tm = {};
-	std::istringstream	ss(date_value);
-	ss >> std::get_time(&tm, "%Y-%m-%d");
+	std::map<std::string, double>::iterator it = this->_exchangeData.lower_bound(date);
 
-	if (ss.fail())
+	if (it->first == date)
 	{
-		throw BadInputException();
-	}
-
-	std::ostringstream	date_to_find;
-	std::map<std::string, double>::iterator it = this->_exchangeRates.end();
-	
-	std::mktime(&tm);
-	date_to_find << std::put_time(&tm, "%Y-%m-%d");
-	it = this->_exchangeRates.lower_bound(date_to_find.str());
-
-	if (it->first == date_to_find.str())
-	{
-		// std::cout << date_to_find.str() << std::endl;
 		return it;
 	}
 
-	if (this->_exchangeRates.begin()->first > date_to_find.str())
+	if (this->_exchangeData.begin()->first > date)
 	{
 		throw DateOutOfRangeException();
 	}
 
-	if (std::prev(this->_exchangeRates.end())->first < date_to_find.str())
+	if (std::prev(this->_exchangeData.end())->first < date)
 	{
-		// std::cout << std::prev(this->_exchangeRates.end())->first << std::endl;
-		return std::prev(this->_exchangeRates.end());
+		return std::prev(this->_exchangeData.end());
 	}
 
 	--it;
-	// std::cout << it->first << std::endl;
 	return it;
+}
+
+void BitcoinExchange::_validateInputData()
+{
+	
+	while (std::getline(file, line))
+	{
+		std::string			date;
+		std::string			amount;
+		double				amount_numeric;
+		std::istringstream	line_in_stream(line);
+
+		try
+		{
+			if (!std::getline(line_in_stream, date, '|')) //! ADD VALIDATION FOR " | "
+			{
+				throw BadInputException();
+			}
+
+			this->_validateDate(date);
+			std::cout << date << " => ";
+		}
+		catch(const BadInputException & e)
+		{
+			std::cerr << "Error: " << e.what() << date << std::endl;
+		}
+
+		if (std::getline(line_in_stream, amount))
+		{
+			try
+			{
+				amount_numeric = this->_parseNumericValue(amount);
+				this->_exchangeData[date] = amount_numeric;
+				std::cout << amount_numeric << std::endl;
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << "Error: " << e.what() << std::endl;
+			}
+		}
+	}
+
 }

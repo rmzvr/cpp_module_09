@@ -40,18 +40,21 @@ class DateOutOfRangeException : public std::exception
 
 class BitcoinExchange
 {
-	using	map = std::map<std::string, double>;
-	private:
-		
-		map	_exchangeRates;
+	using	exchangeMap = std::map<std::string, double>;
+	using	inputMap = std::map<std::string, std::string>;
 
-		// void	_validateNumericValue( std::string str );
-		public:
-		// BitcoinExchange();
-		// ~BitcoinExchange();
-		double	_parseNumericValue( std::string const & str );
-		void	_parseCSVFile();
-		void	_parseInputFile( std::string const & filename );
-		map::iterator	_findRecord( std::string const & date_value );
+	private:
+		exchangeMap	_exchangeData;
+		inputMap	_inputData;
+
+	public:
+		void			_parseCSVFile();
+		void			_parseInputFile( std::string const & filename );
+
+		void			_validateInputData();
+		void			_validateDate( std::string const & date );
+		double			_parseNumericValue( std::string const & str );
+
+		exchangeMap::iterator	_findRecord( std::string const & date );
 
 };
