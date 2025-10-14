@@ -8,6 +8,40 @@
 #include <fstream>
 #include <iostream>
 
+class BitcoinExchange
+{
+	using	ExchangeRateMap = std::map<std::string, double>;
+
+	private:
+		BitcoinExchange();
+		BitcoinExchange( BitcoinExchange const & src ) = delete;
+		BitcoinExchange & operator=( BitcoinExchange const & rhs ) = delete;
+
+		ExchangeRateMap	_exchangeData;
+
+		std::string const	DELIMITER = " | ";
+		std::string const	WHITE_SPACES = " \t\r\n";
+		std::string const	CSV_FILE_PATH = "data/data.csv";
+
+		void					_parseCSVFile();
+
+		void					_processInputFile( std::string const & filepath );
+		void					_processInputLine( std::string const & line );
+
+		bool					_parseLine( std::string const & line, std::string & date, std::string & value ) const;
+
+		void					_validateDate( std::string const & date ) const;
+		double					_parseNumericValue( std::string const & str ) const;
+
+		ExchangeRateMap::iterator	_findRecord( std::string const & date );
+
+		std::string				_trim( std::string const & str ) const;
+
+	public:
+		BitcoinExchange( std::string const & filepath );
+		~BitcoinExchange();
+};
+
 class FailedToOpenFileException : public std::exception
 {
 	public:
@@ -28,7 +62,10 @@ class TooLargeNumberException : public std::exception
 
 class BadInputException : public std::exception
 {
+	private:
+		std::string _message;
 	public:
+		explicit BadInputException(std::string const &line);
 		const char * what() const noexcept override;
 };
 
@@ -38,23 +75,11 @@ class DateOutOfRangeException : public std::exception
 		const char * what() const noexcept override;
 };
 
-class BitcoinExchange
+class InvalidDateException : public std::exception
 {
-	using	exchangeMap = std::map<std::string, double>;
-	using	inputMap = std::map<std::string, std::string>;
-
 	private:
-		exchangeMap	_exchangeData;
-		inputMap	_inputData;
-
+		std::string _message;
 	public:
-		void			_parseCSVFile();
-		void			_parseInputFile( std::string const & filename );
-
-		void			_validateInputData();
-		void			_validateDate( std::string const & date );
-		double			_parseNumericValue( std::string const & str );
-
-		exchangeMap::iterator	_findRecord( std::string const & date );
-
+		explicit InvalidDateException(std::string const &date);
+		const char * what() const noexcept override;
 };
