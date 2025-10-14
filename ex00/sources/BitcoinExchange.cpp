@@ -219,7 +219,6 @@ std::string BitcoinExchange::_trim( std::string const & str ) const
 	return str.substr(first, (last - first + 1));
 }
 
-
 const char * FailedToOpenFileException::what() const noexcept
 {
 	return "could not open file.";

@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-	if (argc < 2)
+	if (argc < COUNT_OF_ARGUMENTS)
 	{
 		std::cerr << "Error: \n\n";
 		std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;

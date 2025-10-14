@@ -20,7 +20,7 @@ class BitcoinExchange
 		ExchangeRateMap	_exchangeData;
 
 		std::string const	DELIMITER = " | ";
-		std::string const	WHITE_SPACES = " \t\r\n";
+		std::string const	WHITE_SPACES = " \t";
 		std::string const	CSV_FILE_PATH = "data/data.csv";
 
 		void					_parseCSVFile();
