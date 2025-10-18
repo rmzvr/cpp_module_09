@@ -9,15 +9,6 @@ void	printNumbersVector( std::vector<int> const & numbers )
 	std::cout << std::endl;
 }
 
-void	printNumbersPairs( std::vector<std::pair<int, int>> const & numbers )
-{
-	for (auto &&i : numbers)
-	{
-		std::cout << "[" << i.first << " " << i.second << "] ";
-	}
-	std::cout << std::endl;
-}
-
 /*
 	* The Jacobsthal sequence starts as: 0, 1, 1, 3, 5, 11, 21, ...
 	* In the Ford–Johnson (merge–insertion) algorithm, the first two numbers (0 and 1)
@@ -45,103 +36,120 @@ std::vector<int>	get_jacobsthal_sequence( int n , int c )
 	return sequence;
 }
 
-std::vector<int>	sortSecondaryChain( std::vector<int> container )
-{
-	size_t				container_size = container.size();
-	std::vector<int>	jacobsthal_sequence = get_jacobsthal_sequence(33, container_size);
-	size_t				jacobsthal_sequence_size = jacobsthal_sequence.size();
-	std::vector<int>	sorted_secondary_chain;
-
-	for (size_t i = 0; i < jacobsthal_sequence_size; ++i)
-	{
-		int	range_start_index = jacobsthal_sequence.at(i) - 1;
-		int	range_end_index;
-		if (i + 1 >= jacobsthal_sequence_size)
-		{
-			range_end_index = container_size;
-		}
-		else
-		{
-			range_end_index = jacobsthal_sequence.at(i + 1) - 1;
-		}
-
-		for (int i = range_end_index - 1; i >= range_start_index; --i)
-		{
-			sorted_secondary_chain.push_back(container.at(i));
-		}
-	}
-	return sorted_secondary_chain;
-}
-
-void	binaryInsertionSort( std::vector<int> & container, int n )
+void	binaryInsertion( std::vector<int> & container, int n, int & comparisons )
 {
 	int	left = 0;
 	int	right = container.size();
 	int	pivot = left + (right - left) / 2;
+
 	while (left < right)
 	{
 		if (container.at(pivot) < n)
 			left = pivot + 1;
 		else
 			right = pivot;
+		comparisons++;
 		pivot = left + (right - left) / 2;
 	}
+
 	container.insert(container.begin() + pivot, n);
 }
 
-std::vector<int>	mergeInsertSort( std::vector<int> & numbers, int & comparisons )
+void	swapTwoElementsContainer( std::vector<int> & numbers, int & comparisons )
 {
-	std::vector<std::pair<int, int>>	pairs;
-	std::vector<int>					main_chain;
-	std::vector<int>					secondary_chain;
-
-	//! Base cases
-	if (numbers.size() == 0 || numbers.size() == 1)
-		return numbers;
-
-	if (numbers.size() == 2)
+	if (numbers[0] > numbers[1])
 	{
-		if (numbers[0] > numbers[1])
-		{
-			std::swap(numbers.at(0), numbers.at(1));
-			comparisons++;
-		}
-		return numbers;
+		std::swap(numbers[0], numbers[1]);
+		comparisons++;
 	}
+}
 
-	for (std::vector<int>::iterator curr_it = numbers.begin(); curr_it < numbers.end(); curr_it += 2)
+void	splitNumbersToMainAndSecondaryChains( std::vector<int> const & numbers, std::vector<int> & main_chain, std::vector<int> & secondary_chain, int & comparisons )
+{
+	for (std::vector<int>::const_iterator curr_it = numbers.begin(); curr_it < numbers.end(); curr_it += 2)
 	{
-		std::vector<int>::iterator	next_it = std::next(curr_it);
+		std::vector<int>::const_iterator	next_it = std::next(curr_it);
 
 		if (next_it == numbers.end())
 		{
 			break;
 		}
 
-		int	smaller = std::min(*curr_it, *next_it);
-		comparisons++;
-		int	bigger = std::max(*curr_it, *next_it);
+		int	a = *curr_it;
+		int	b = *next_it;
+
+		int	smaller;
+		int	bigger;
+
+		if (a > b)
+		{
+			bigger = a;
+			smaller = b;
+		}
+		else
+		{
+			bigger = b;
+			smaller = a;
+		}
 		comparisons++;
 
-		main_chain.push_back(bigger); //! bigger
-
-		secondary_chain.push_back(smaller); //! smaller
+		main_chain.push_back(bigger);
+		secondary_chain.push_back(smaller);
 	}
 
 	if (numbers.size() % 2 != 0)
-		secondary_chain.push_back(numbers.back()); //! leftover
+		secondary_chain.push_back(numbers.back());
+}
 
-	if (secondary_chain.empty() == false)
-		main_chain = mergeInsertSort(main_chain, comparisons);
+void	performBinaryInsertionWithJacobsthalSequence( std::vector<int> & main_chain, std::vector<int> & secondary_chain, int & comparisons )
+{
+	size_t				secondary_chain_size = secondary_chain.size();
+	std::vector<int>	jacobsthal_sequence = get_jacobsthal_sequence(33, secondary_chain_size);
+	size_t				jacobsthal_sequence_size = jacobsthal_sequence.size();
 
-	secondary_chain = sortSecondaryChain(secondary_chain);
-
-	for (auto &i : secondary_chain)
+	for (size_t i = 0; i < jacobsthal_sequence_size; ++i)
 	{
-		binaryInsertionSort(main_chain, i);
+		int	range_start_index = jacobsthal_sequence[i] - 1;
+		int	range_end_index;
+		if (i + 1 >= jacobsthal_sequence_size)
+		{
+			range_end_index = secondary_chain_size;
+		}
+		else
+		{
+			range_end_index = jacobsthal_sequence[i + 1] - 1;
+		}
+
+		for (int j = range_end_index - 1; j >= range_start_index; --j)
+		{
+			binaryInsertion(main_chain, secondary_chain[j], comparisons);
+		}
+	}
+}
+
+void	mergeInsertSort( std::vector<int> & numbers, int & comparisons )
+{
+	size_t	number_size = numbers.size();
+
+	if (number_size == 0 || number_size == 1)
+		return ;
+
+	if (number_size == 2)
+	{
+		swapTwoElementsContainer(numbers, comparisons);
+		return ;
 	}
 
-	return main_chain;
+	std::vector<int>	main_chain;
+	std::vector<int>	secondary_chain;
+
+	splitNumbersToMainAndSecondaryChains(numbers, main_chain, secondary_chain, comparisons);
+
+	mergeInsertSort(main_chain, comparisons);
+
+	performBinaryInsertionWithJacobsthalSequence(main_chain, secondary_chain, comparisons);
+
+	numbers = main_chain;
 }
 
 int main( int argc, char **argv )
@@ -149,15 +157,14 @@ int main( int argc, char **argv )
 	(void) argc;
 	(void) argv;
 
-	int					comparisons = 0;
+	std::vector<int>	numbers{ 15, 12, 7, 9, 10, 3, 1, 14, 8, 5, 11, 6, 2, 4, 13 };
 
-	std::vector<int>	numbers{ 2, 1, 3, 5, 4, 7, 6 };
+	int	comparisons = 0;
 
-	std::vector<int>	sorted = mergeInsertSort(numbers, comparisons);
+	mergeInsertSort(numbers, comparisons);
 
-	std::cout << comparisons << std::endl;
-
-	std::cout <<std::boolalpha << std::is_sorted(sorted.begin(), sorted.end()) << std::endl;
+	std::cout << "comparisons: " << comparisons << std::endl;
+	std::cout <<std::boolalpha << std::is_sorted(numbers.begin(), numbers.end()) << std::endl;
 
 	return 0;
 }
