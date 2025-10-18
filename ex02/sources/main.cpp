@@ -89,15 +89,29 @@ void	binaryInsertionSort( std::vector<int> & container, int n )
 	container.insert(container.begin() + pivot, n);
 }
 
-std::vector<int>	mergeInsertSort( std::vector<int> const & numbers )
+std::vector<int>	mergeInsertSort( std::vector<int> & numbers, int & comparisons )
 {
 	std::vector<std::pair<int, int>>	pairs;
 	std::vector<int>					main_chain;
 	std::vector<int>					secondary_chain;
 
-	for (std::vector<int>::const_iterator curr_it = numbers.begin(); curr_it < numbers.end(); curr_it += 2)
+	//! Base cases
+	if (numbers.size() == 0 || numbers.size() == 1)
+		return numbers;
+
+	if (numbers.size() == 2)
 	{
-		std::vector<int>::const_iterator	next_it = curr_it + 1;
+		if (numbers[0] > numbers[1])
+		{
+			std::swap(numbers.at(0), numbers.at(1));
+			comparisons++;
+		}
+		return numbers;
+	}
+
+	for (std::vector<int>::iterator curr_it = numbers.begin(); curr_it < numbers.end(); curr_it += 2)
+	{
+		std::vector<int>::iterator	next_it = std::next(curr_it);
 
 		if (next_it == numbers.end())
 		{
@@ -105,37 +119,20 @@ std::vector<int>	mergeInsertSort( std::vector<int> const & numbers )
 		}
 
 		int	smaller = std::min(*curr_it, *next_it);
+		comparisons++;
 		int	bigger = std::max(*curr_it, *next_it);
+		comparisons++;
 
-		std::pair<int, int>	pair{smaller, bigger};
-		pairs.push_back(pair);
-	}
+		main_chain.push_back(bigger); //! bigger
 
-	std::sort(pairs.begin(), pairs.end(), [](std::pair<int, int> const & pair1, std::pair<int, int> const & pair2){ return pair1.second < pair2.second; });
-	
-	for (std::vector<std::pair<int, int>>::iterator it = pairs.begin(); it != pairs.end(); ++it)
-	{
-		if (it == pairs.begin())
-		{
-			main_chain.push_back(it->first); //! FIX RECURSION
-		}
-		
-		main_chain.push_back(it->second);
-		
-		if (it != pairs.begin())
-		{
-			secondary_chain.push_back(it->first);
-		}
+		secondary_chain.push_back(smaller); //! smaller
 	}
 
 	if (numbers.size() % 2 != 0)
-	{
-		secondary_chain.push_back(numbers.back());
-	}
+		secondary_chain.push_back(numbers.back()); //! leftover
 
-	// std::cout << "iter" << i << "main_chain.size(): " << main_chain.size() << std::endl;
-	// if (main_chain.size() > 2)
-	// 	main_chain = mergeInsertSort(main_chain, i + 1);
+	if (secondary_chain.empty() == false)
+		main_chain = mergeInsertSort(main_chain, comparisons);
 
 	secondary_chain = sortSecondaryChain(secondary_chain);
 
@@ -143,7 +140,6 @@ std::vector<int>	mergeInsertSort( std::vector<int> const & numbers )
 	{
 		binaryInsertionSort(main_chain, i);
 	}
-	// printNumbersVector(main_chain);
 
 	return main_chain;
 }
@@ -153,9 +149,13 @@ int main( int argc, char **argv )
 	(void) argc;
 	(void) argv;
 
-	std::vector<int>	numbers{ 3, 5 };
+	int					comparisons = 0;
 
-	std::vector<int> sorted = mergeInsertSort(numbers);
+	std::vector<int>	numbers{ 2, 1, 3, 5, 4, 7, 6 };
+
+	std::vector<int>	sorted = mergeInsertSort(numbers, comparisons);
+
+	std::cout << comparisons << std::endl;
 
 	std::cout <<std::boolalpha << std::is_sorted(sorted.begin(), sorted.end()) << std::endl;
 
