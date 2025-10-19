@@ -258,7 +258,7 @@ void PmergeMe::_mergeInsertionSort( ListSequence & sequence )
 	
 	this->_insertWithJacobsthalSequence(larger_elements, smaller_elements);
 
-	sequence.assign(larger_elements.begin(), larger_elements.end());
+	sequence = larger_elements;
 }
 
 void PmergeMe::_swapTwoElements( ListSequence & sequence )
