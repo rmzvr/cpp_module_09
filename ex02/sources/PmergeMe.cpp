@@ -3,6 +3,17 @@
 PmergeMe::PmergeMe()
 {}
 
+PmergeMe::PmergeMe( PmergeMe const & other )
+{
+	(void)other;
+}
+
+PmergeMe &	PmergeMe::operator=( PmergeMe const & other )
+{
+	(void)other;
+	return *this;
+}
+
 PmergeMe::~PmergeMe()
 {}
 
@@ -15,6 +26,101 @@ void PmergeMe::sort( ListSequence & sequence )
 {
 	this->_mergeInsertionSort(sequence);
 }
+
+// Utility functions - Vector
+void PmergeMe::printSequence( VectorSequence const & sequence, std::string const & label ) const
+{
+	std::cout << label << ": ";
+	this->_printNumbers(sequence);
+	std::cout << std::endl;
+}
+
+void PmergeMe::printTime( VectorSequence const & sequence, std::chrono::duration<double> const & duration, std::string const & containerName ) const
+{
+	std::cout << std::fixed << std::setprecision(6);
+	std::cout << "Time to process a range of " << sequence.size() 
+				<< " elements with " << containerName << " : " 
+				<< duration.count() << " us" << std::endl;
+}
+
+bool PmergeMe::verifySorted( VectorSequence const & sequence ) const
+{
+	return std::is_sorted(sequence.begin(), sequence.end());
+}
+
+std::chrono::duration<double> PmergeMe::sortAndMeasureTime( VectorSequence & sequence )
+{
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	this->sort(sequence);
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	
+	return end - start;
+}
+
+// Utility functions - List
+void PmergeMe::printSequence( ListSequence const & sequence, std::string const & label ) const
+{
+	std::cout << label << ": ";
+	this->_printNumbers(sequence);
+	std::cout << std::endl;
+}
+
+void PmergeMe::printTime( ListSequence const & sequence, std::chrono::duration<double> const & duration, std::string const & containerName ) const
+{
+	std::cout << std::fixed << std::setprecision(6);
+	std::cout << "Time to process a range of " << sequence.size() 
+				<< " elements with " << containerName << " : " 
+				<< duration.count() << " us" << std::endl;
+}
+
+bool PmergeMe::verifySorted( ListSequence const & sequence ) const
+{
+	return std::is_sorted(sequence.begin(), sequence.end());
+}
+
+std::chrono::duration<double> PmergeMe::sortAndMeasureTime( ListSequence & sequence )
+{
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	this->sort(sequence);
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	
+	return end - start;
+}
+
+// Static utility function
+
+int PmergeMe::parseArgument( char *argument )
+{
+	int number;
+	size_t pos;
+	std::string value = argument;
+
+	try
+	{
+		number = std::stoi(value, &pos);
+	}
+	catch (std::out_of_range const &)
+	{
+		throw std::invalid_argument("number too large (integer overflow).");
+	}
+	catch (std::exception const &)
+	{
+		throw std::invalid_argument("invalid input format.");
+	}
+
+	if (pos != value.length())
+	{
+		throw std::invalid_argument("contains non-digit characters.");
+	}
+	if (number < 0)
+	{
+		throw std::invalid_argument("negative number not allowed.");
+	}
+
+	return number;
+}
+
+// Sorting - Vector
 
 void PmergeMe::_mergeInsertionSort( VectorSequence & sequence )
 {
@@ -51,7 +157,6 @@ void PmergeMe::_swapTwoElements( VectorSequence & sequence )
 
 void PmergeMe::_splitToChains( VectorSequence const & sequence, VectorSequence & larger_elements, VectorSequence & smaller_elements )
 {
-	// Explain why it doing it
 	size_t	pairs = sequence.size() / 2;
 	larger_elements.reserve(pairs);
 	smaller_elements.reserve(pairs + (sequence.size() % 2));
@@ -130,6 +235,7 @@ void PmergeMe::_binaryInsertion( VectorSequence & sequence, int number )
 	sequence.insert(it, number);
 }
 
+// Sorting - List
 void PmergeMe::_mergeInsertionSort( ListSequence & sequence )
 {
 	size_t	number_size = sequence.size();
@@ -246,4 +352,21 @@ void PmergeMe::_binaryInsertion( ListSequence & sequence, int number )
 	ListSequence::iterator	it = std::lower_bound(sequence.begin(), sequence.end(), number);
 
 	sequence.insert(it, number);
+}
+
+// Utility helpers
+void PmergeMe::_printNumbers( VectorSequence const & sequence ) const
+{
+	for (VectorSequence::const_iterator it = sequence.begin(); it != sequence.end(); ++it)
+	{
+		std::cout << *it << " ";
+	}
+}
+
+void PmergeMe::_printNumbers( ListSequence const & sequence ) const
+{
+	for (ListSequence::const_iterator it = sequence.begin(); it != sequence.end(); ++it)
+	{
+		std::cout << *it << " ";
+	}
 }
