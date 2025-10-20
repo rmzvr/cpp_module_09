@@ -83,3 +83,9 @@ class InvalidDateException : public std::exception
 		explicit InvalidDateException(std::string const &date);
 		const char * what() const noexcept override;
 };
+
+class InvalidHeaderException : public std::exception
+{
+	public:
+		const char * what() const noexcept override;
+};

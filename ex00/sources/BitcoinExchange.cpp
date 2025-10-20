@@ -83,6 +83,12 @@ void BitcoinExchange::_processInputFile( std::string const &filepath )
 	std::string	line;
 	std::getline(file, line);
 
+	std::string trimmed_header = this->_trim(line);
+	if (trimmed_header != "date | value")
+	{
+		throw InvalidHeaderException();
+	}
+
 	while (std::getline(file, line))
 	{
 		this->_processInputLine(line);
@@ -249,4 +255,9 @@ InvalidDateException::InvalidDateException(std::string const &date)
 const char * InvalidDateException::what() const noexcept
 {
 	return _message.c_str();
+}
+
+const char * InvalidHeaderException::what() const noexcept
+{
+	return "invalid header: expected 'date | value'.";
 }
