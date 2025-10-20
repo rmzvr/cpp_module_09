@@ -153,12 +153,6 @@ void BitcoinExchange::_validateDate(std::string const &date) const
 	{
 		throw InvalidDateException(date);
 	}
-
-	int year = tm.tm_year + 1900;
-	if (year < 2009)
-	{
-		throw InvalidDateException(date);
-	}
 }
 
 double BitcoinExchange::_parseNumericValue( std::string const &str ) const
