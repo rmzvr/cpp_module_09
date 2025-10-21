@@ -25,7 +25,7 @@ void BitcoinExchange::_parseCSVFile()
 
 	if (file.is_open() == false)
 	{
-		throw FailedToOpenFileException();
+		throw std::runtime_error("could not open file.");
 	}
 
 	std::string	line;
@@ -39,28 +39,16 @@ void BitcoinExchange::_parseCSVFile()
 
 		if (std::getline(line_stream, date, ',') && std::getline(line_stream, rate_str))
 		{
-			date = this->_trim(date);
-			rate_str = this->_trim(rate_str);
-
-			if (date.empty() || rate_str.empty())
-				continue;
-
 			try
 			{
 				std::size_t pos;
 				double rate = std::stod(rate_str, &pos);
-				
-				if (pos != rate_str.length())
-				{
-					std::cerr << "Warning: Invalid rate in CSV: " << line << std::endl;
-					continue;
-				}
 
-				this->_exchangeData[date] = rate;
+				this->_exchangeData.emplace(date, rate);
 			}
-			catch(const std::exception& e)
+			catch(std::exception const & e)
 			{
-				std::cerr << "Warning: Failed to parse CSV line: " << line << std::endl;
+				std::cerr << "Failed to parse CSV line: " << line << std::endl;
 			}
 		}
 	}
@@ -77,16 +65,15 @@ void BitcoinExchange::_processInputFile( std::string const &filepath )
 
 	if (file.is_open() == false)
 	{
-		throw FailedToOpenFileException();
+		throw std::runtime_error("could not open file.");
 	}
 
 	std::string	line;
 	std::getline(file, line);
 
-	std::string trimmed_header = this->_trim(line);
-	if (trimmed_header != "date | value")
+	if (line != "date | value")
 	{
-		throw InvalidHeaderException();
+		throw std::runtime_error("invalid header => \"" + line + "\"");
 	}
 
 	while (std::getline(file, line))
@@ -99,14 +86,15 @@ void BitcoinExchange::_processInputLine( std::string const & line )
 {
 	std::string			date;
 	std::string			value_string;
+
 	try
 	{
-		double				value;
-		double				rate;
+		double	value;
+		double	rate;
 
-		if (this->_parseLine(line, date, value_string) == false)
+		if (line.empty() || this->_parseLine(line, date, value_string) == false)
 		{
-			throw BadInputException(line);
+			throw std::invalid_argument("bad input => \"" + line + "\"");
 		}
 
 		this->_validateDate(date);
@@ -136,28 +124,45 @@ bool BitcoinExchange::_parseLine( std::string const & line, std::string & date, 
 	date = line.substr(0, pos);
 	value = line.substr(pos + this->DELIMITER.length());
 	
-	date = this->_trim(date);
-	value = this->_trim(value);
-	
+	std::string	trimmed_value = this->_trim(value);
+	if (trimmed_value.length() != value.length())
+	{
+		throw std::invalid_argument("bad input => \"" + value + "\"");
+	}
+
 	return !date.empty() && !value.empty();
 }
 
 void BitcoinExchange::_validateDate(std::string const &date) const
 {
-	tm	tm = {};
-	std::istringstream	date_in_stream(date);
+	std::regex date_pattern("^\\d{4}-\\d{2}-\\d{2}$");
 
-	date_in_stream >> std::get_time(&tm, "%Y-%m-%d");
-
-	if (date_in_stream.fail() == true)
+	if (!std::regex_match(date, date_pattern))
 	{
-		throw InvalidDateException(date);
+		throw std::invalid_argument("invalid date => \"" + date + "\"");
 	}
 
-	if (tm.tm_mon < 0 || tm.tm_mon > 11 || 
-		tm.tm_mday < 1 || tm.tm_mday > 31)
+	std::istringstream	date_in_stream(date);
+
+	tm	tm = {};
+	date_in_stream >> std::get_time(&tm, "%Y-%m-%d");
+
+	if (date_in_stream.fail() || !date_in_stream.eof())
 	{
-		throw InvalidDateException(date);
+		throw std::invalid_argument("invalid date => \"" + date + "\"");
+	}
+
+	int original_year = tm.tm_year;
+	int original_mon = tm.tm_mon;
+	int original_mday = tm.tm_mday;
+
+	std::mktime(&tm);
+
+	if (tm.tm_year != original_year || 
+		tm.tm_mon != original_mon || 
+		tm.tm_mday != original_mday)
+	{
+		throw std::invalid_argument("invalid date => \"" + date + "\"");
 	}
 }
 
@@ -166,21 +171,29 @@ double BitcoinExchange::_parseNumericValue( std::string const &str ) const
 	double		result;
 	std::size_t	pos;
 
-	result = std::stod(str, &pos);
+	try
+	{
+		result = std::stod(str, &pos);
+	}
+	catch(const std::exception& e)
+	{
+		throw std::invalid_argument("bad input => \"" + str + "\"");
+	}
+	
 
 	if (pos != str.length())
 	{
-		throw BadInputException(str);
+		throw std::invalid_argument("bad input => \"" + str + "\"");
 	}
 
 	if (result < 0)
 	{
-		throw OnlyPositiveNumberException();
+		throw std::invalid_argument("not a positive number.");
 	}
 
 	if (result > 1000)
 	{
-		throw TooLargeNumberException();
+		throw std::out_of_range("too large a number.");
 	}
 
 	return result;
@@ -190,7 +203,7 @@ std::map<std::string, double>::iterator BitcoinExchange::_findRecord( std::strin
 {
 	if (this->_exchangeData.empty())
 	{
-		throw DateOutOfRangeException();
+		throw std::out_of_range("date out of range.");
 	}
 
 	std::map<std::string, double>::iterator it = this->_exchangeData.lower_bound(date);
@@ -202,7 +215,7 @@ std::map<std::string, double>::iterator BitcoinExchange::_findRecord( std::strin
 
 	if (it == this->_exchangeData.begin())
 	{
-		throw DateOutOfRangeException();
+		throw std::out_of_range("date out of range.");
 	}
 
 	--it;
@@ -217,47 +230,4 @@ std::string BitcoinExchange::_trim( std::string const & str ) const
 
 	size_t last = str.find_last_not_of(this->WHITE_SPACES);
 	return str.substr(first, (last - first + 1));
-}
-
-const char * FailedToOpenFileException::what() const noexcept
-{
-	return "could not open file.";
-}
-
-const char * OnlyPositiveNumberException::what() const noexcept
-{
-	return "not a positive number.";
-}
-
-const char * TooLargeNumberException::what() const noexcept
-{
-	return "too large a number.";
-}
-
-BadInputException::BadInputException(std::string const &line)
-	: _message("bad input => " + line)
-{}
-
-const char * BadInputException::what() const noexcept
-{
-	return _message.c_str();
-}
-
-const char * DateOutOfRangeException::what() const noexcept
-{
-	return "number out of range.";
-}
-
-InvalidDateException::InvalidDateException(std::string const &date)
-	: _message("bad input => " + date)
-{}
-
-const char * InvalidDateException::what() const noexcept
-{
-	return _message.c_str();
-}
-
-const char * InvalidHeaderException::what() const noexcept
-{
-	return "invalid header: expected 'date | value'.";
 }
