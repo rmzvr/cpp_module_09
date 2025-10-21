@@ -68,7 +68,7 @@ int RPN::_performOperation( char op, int b, int a )
 		return b - a;
 	else if (op == '*')
 		return b * a;
-	else // op == '/'
+	else if (op == '/')
 		return b / a;
 }
 
@@ -96,10 +96,6 @@ bool	RPN::_calculateExpression(std::string const &expression)
 
 			int const	result = this->_performOperation(c, b, a);
 			this->_stack.push(result);
-		}
-		else
-		{
-			return false;
 		}
 	}
 	return true;
