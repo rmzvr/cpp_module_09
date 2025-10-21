@@ -2,6 +2,7 @@
 
 #include <map>
 #include <ctime>
+#include <regex>
 #include <string>
 #include <iomanip>
 #include <sstream>
@@ -10,7 +11,7 @@
 
 class BitcoinExchange
 {
-	using	ExchangeRateMap = std::map<std::string, double>;
+	using	ExchangeRateMap = std::multimap<std::string, double>;
 
 	private:
 		BitcoinExchange();
@@ -20,7 +21,7 @@ class BitcoinExchange
 		ExchangeRateMap	_exchangeData;
 
 		std::string const	DELIMITER = " | ";
-		std::string const	WHITE_SPACES = " \t";
+		std::string const	WHITE_SPACES = " \t\n\a";
 		std::string const	CSV_FILE_PATH = "data/data.csv";
 
 		void					_parseCSVFile();
@@ -40,52 +41,4 @@ class BitcoinExchange
 	public:
 		BitcoinExchange( std::string const & filepath );
 		~BitcoinExchange();
-};
-
-class FailedToOpenFileException : public std::exception
-{
-	public:
-		const char * what() const noexcept override;
-};
-
-class OnlyPositiveNumberException : public std::exception
-{
-	public:
-		const char * what() const noexcept override;
-};
-
-class TooLargeNumberException : public std::exception
-{
-	public:
-		const char * what() const noexcept override;
-};
-
-class BadInputException : public std::exception
-{
-	private:
-		std::string _message;
-	public:
-		explicit BadInputException(std::string const &line);
-		const char * what() const noexcept override;
-};
-
-class DateOutOfRangeException : public std::exception
-{
-	public:
-		const char * what() const noexcept override;
-};
-
-class InvalidDateException : public std::exception
-{
-	private:
-		std::string _message;
-	public:
-		explicit InvalidDateException(std::string const &date);
-		const char * what() const noexcept override;
-};
-
-class InvalidHeaderException : public std::exception
-{
-	public:
-		const char * what() const noexcept override;
 };
