@@ -10,7 +10,7 @@ int main( int argc, char **argv )
 	}
 
 	std::vector<int>	vector_sequence;
-	std::list<int>		list_sequence;
+	// std::list<int>		list_sequence;
 
 	vector_sequence.reserve(argc - 1);
 
@@ -20,7 +20,7 @@ int main( int argc, char **argv )
 		{
 			int num = PmergeMe::parseArgument(argv[i]);
 			vector_sequence.push_back(num);
-			list_sequence.push_back(num);
+			// list_sequence.push_back(num);
 		}
 	}
 	catch (std::exception const & e)
@@ -32,26 +32,26 @@ int main( int argc, char **argv )
 
 	PmergeMe	pm;
 
-	pm.printSequence(vector_sequence, "Before");
+	// pm.printSequence(vector_sequence, "Before");
 
 	std::chrono::duration<double> vec_duration = pm.sortAndMeasureTime(vector_sequence);
-	std::chrono::duration<double> list_duration = pm.sortAndMeasureTime(list_sequence);
+	// std::chrono::duration<double> list_duration = pm.sortAndMeasureTime(list_sequence);
 
-	if (!pm.verifySorted(vector_sequence))
-	{
-		std::cerr << "Error: vector sequence is not sorted!" << std::endl;
-		return 1;
-	}
-	if (!pm.verifySorted(list_sequence))
-	{
-		std::cerr << "Error: list sequence is not sorted!" << std::endl;
-		return 1;
-	}
+	// if (!pm.verifySorted(vector_sequence))
+	// {
+	// 	std::cerr << "Error: vector sequence is not sorted!" << std::endl;
+	// 	return 1;
+	// }
+	// if (!pm.verifySorted(list_sequence))
+	// {
+	// 	std::cerr << "Error: list sequence is not sorted!" << std::endl;
+	// 	return 1;
+	// }
 
-	pm.printSequence(vector_sequence, "After ");
+	// pm.printSequence(vector_sequence, "After ");
 
-	pm.printTime(vector_sequence, vec_duration, "std::vector");
-	pm.printTime(list_sequence, list_duration, "std::list  ");
+	// pm.printTime(vector_sequence, vec_duration, "std::vector");
+	// pm.printTime(list_sequence, list_duration, "std::list  ");
 
 	return 0;
 }

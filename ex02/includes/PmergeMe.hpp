@@ -43,7 +43,7 @@ class PmergeMe
 		static constexpr int	MIN_SIZE_FOR_SORTING = 2;
 
 		// Sorting - Vector
-		void	_mergeInsertionSort( VectorSequence & sequence );
+		void	_mergeInsertionSort( VectorSequence & sequence, size_t sequence_size, size_t recursion_depth );
 		void	_swapTwoElements( VectorSequence & sequence );
 		void	_splitToChains( VectorSequence const & sequence, VectorSequence & larger_elements, VectorSequence & smaller_elements );
 		void	_generateJacobsthalSequence( VectorSequence & sequence, int n, int c );

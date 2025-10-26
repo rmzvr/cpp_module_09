@@ -19,7 +19,9 @@ PmergeMe::~PmergeMe()
 
 void PmergeMe::sort( VectorSequence & sequence )
 {
-	this->_mergeInsertionSort(sequence);
+	size_t	sequence_size = sequence.size();
+	size_t	recursion_depth = 1;
+	this->_mergeInsertionSort(sequence, sequence_size, recursion_depth);
 }
 
 void PmergeMe::sort( ListSequence & sequence )
@@ -122,29 +124,64 @@ int PmergeMe::parseArgument( char *argument )
 
 // Sorting - Vector
 
-void PmergeMe::_mergeInsertionSort( VectorSequence & sequence )
+void PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_size, size_t recursion_depth )
 {
-	size_t	number_size = sequence.size();
+	(void) sequence;
+	(void) sequence_size;
+	(void) recursion_depth;
 	
-	if (number_size == 0 || number_size == 1)
-	return ;
+	size_t	amount_of_elements_in_pair = 1 << recursion_depth;
+	size_t	amount_of_pairs = sequence_size / amount_of_elements_in_pair;
+	size_t	amount_of_elements_to_pair = amount_of_pairs * amount_of_elements_in_pair;
 
-	if (number_size == PmergeMe::MIN_SIZE_FOR_SORTING)
+	if (sequence_size <= amount_of_elements_in_pair)
+		return;
+
+	std::cout << "\nIteration - " << recursion_depth;
+	std::cout << "\nAmount of elements in pair - " << amount_of_elements_in_pair;
+	std::cout << "\nAmount of pairs - " << amount_of_pairs;
+	std::cout << "\nAmount of elements to pair - " << amount_of_elements_to_pair;
+	std::cout << std::endl;
+	std::cout << std::endl;
+
+	size_t	i = 0;
+	for (; i < amount_of_elements_to_pair;)
 	{
-		this->_swapTwoElements(sequence);
-		return ;
-	}
+		for (size_t j = 0; j < amount_of_elements_in_pair; j += amount_of_elements_in_pair)
+		{
+			size_t	idx = i + j;
 
-	VectorSequence	larger_elements;
-	VectorSequence	smaller_elements;
-	
-	this->_splitToChains(sequence, larger_elements, smaller_elements);
-	
-	this->_mergeInsertionSort(larger_elements);
-	
-	this->_insertWithJacobsthalSequence(larger_elements, smaller_elements);
-	
-	sequence = larger_elements;
+			size_t	left_start = idx;
+			size_t	left_end = idx + amount_of_elements_in_pair;
+			size_t	right_start = left_end;
+			size_t	right_end = right_start + amount_of_elements_in_pair;
+			std::cout << "left_start: " << left_start << std::endl;
+			std::cout << "left_end: " << left_end << std::endl;
+			std::cout << "idx: " << idx << " - " << sequence[idx] << std::endl;
+
+			// for (size_t k = 0; k < amount_of_elements_in_pair / 2; k++)
+			// {
+			// 	std::cout << amount_of_elements_in_pair / 2 << std::endl;
+			// }
+			
+			// std::cout << "i: " << i << ", idx: " << idx << " - " << sequence[idx] << " | \n";
+			// std::cout << sequence[idx] << std::endl; //! First element in pair
+			// std::cout << sequence[idx + ((amount_of_elements_in_pair - 1))] << std::endl; //! Second element in pair
+		}
+		std::cout << std::endl;
+
+		i += amount_of_elements_in_pair;
+	}
+	std::cout << "leftovers: ";
+	for (size_t k = i; k < sequence_size; ++k)
+	{
+		std::cout << sequence[k] << ' ';
+	}
+	std::cout << std::endl;
+
+	// this->_printNumbers(sequence);
+
+	this->_mergeInsertionSort(sequence, amount_of_elements_to_pair, recursion_depth + 1);
 }
 
 void PmergeMe::_swapTwoElements( VectorSequence & sequence )
@@ -361,6 +398,7 @@ void PmergeMe::_printNumbers( VectorSequence const & sequence ) const
 	{
 		std::cout << *it << " ";
 	}
+	std::cout << std::endl; //! REMOVE
 }
 
 void PmergeMe::_printNumbers( ListSequence const & sequence ) const
