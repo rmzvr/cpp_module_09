@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 class PmergeMe
 {
@@ -48,6 +49,7 @@ class PmergeMe
 		void	_splitToChains( VectorSequence const & sequence, VectorSequence & larger_elements, VectorSequence & smaller_elements );
 		void	_generateJacobsthalSequence( VectorSequence & sequence, int n, int c );
 		void	_insertWithJacobsthalSequence( VectorSequence & larger_elements, VectorSequence & smaller_elements );
+		void	_insertWithJacobsthalSequence1( VectorSequence & main_chain, VectorSequence & pending_chain, size_t	smaller_elements_size, size_t amount_of_elements_in_pair );
 		void	_binaryInsertion( VectorSequence & sequence, int number );
 
 		// Sorting - List
