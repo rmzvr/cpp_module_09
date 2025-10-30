@@ -32,14 +32,14 @@ int main( int argc, char **argv )
 
 	PmergeMe	pm;
 
-	pm.printSequence(vector_sequence, "Before");
+	// pm.printSequence(vector_sequence, "Before");
 
 	std::chrono::duration<double> vec_duration = pm.sortAndMeasureTime(vector_sequence);
 	// std::chrono::duration<double> list_duration = pm.sortAndMeasureTime(list_sequence);
 
 	if (!pm.verifySorted(vector_sequence))
 	{
-		pm.printSequence(vector_sequence, "After ");
+		// pm.printSequence(vector_sequence, "After ");
 
 		std::cerr << "Error: vector sequence is not sorted!" << std::endl;
 		return 1;
@@ -50,7 +50,7 @@ int main( int argc, char **argv )
 	// 	return 1;
 	// }
 
-	pm.printSequence(vector_sequence, "After ");
+	// pm.printSequence(vector_sequence, "After ");
 
 	pm.printTime(vector_sequence, vec_duration, "std::vector");
 	// pm.printTime(list_sequence, list_duration, "std::list  ");

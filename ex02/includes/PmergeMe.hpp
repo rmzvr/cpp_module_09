@@ -44,12 +44,22 @@ class PmergeMe
 		static constexpr int	MIN_SIZE_FOR_SORTING = 2;
 
 		// Sorting - Vector
+		void	_insertPendingGroup( VectorSequence & main_chain, VectorSequence const & pending_chain, int group_index, size_t group_size, size_t search_depth );
+		size_t	_findGroupInsertionIndex( VectorSequence const & chain, size_t max_search_range, int target_value, size_t elements_per_group );
+		void	_sortPairs( VectorSequence & sequence, size_t amount_of_members_in_pair, size_t amount_of_elements_in_member, size_t amount_of_elements_to_pair );
 		void	_mergeInsertionSort( VectorSequence & sequence, size_t sequence_size, size_t recursion_depth );
-		void	_swapTwoElements( VectorSequence & sequence );
-		void	_splitToChains( VectorSequence const & sequence, VectorSequence & larger_elements, VectorSequence & smaller_elements );
+		void	_splitToChains(
+			VectorSequence const & sequence,
+			VectorSequence & main_chain,
+			VectorSequence & pending_chain,
+			size_t amount_of_members_in_pair,
+			size_t amount_of_elements_in_member,
+			size_t amount_of_elements_to_pair,
+			size_t sequence_size
+		);
 		void	_generateJacobsthalSequence( VectorSequence & sequence, int n, int c );
 		void	_insertWithJacobsthalSequence( VectorSequence & larger_elements, VectorSequence & smaller_elements );
-		void	_insertWithJacobsthalSequence1( VectorSequence & main_chain, VectorSequence & pending_chain, size_t	smaller_elements_size, size_t amount_of_elements_in_pair );
+		void	_insertWithJacobsthalSequence1( VectorSequence & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t amount_elements_in_member );
 		void	_binaryInsertion( VectorSequence & sequence, int number );
 
 		// Sorting - List

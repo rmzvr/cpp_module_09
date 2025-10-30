@@ -125,240 +125,199 @@ int PmergeMe::parseArgument( char *argument )
 
 // Sorting - Vector
 
-int lower_bound_index( std::vector<int> const & main_chain, size_t main_chain_size, int target, size_t amount_of_elements_in_pair )
+size_t	PmergeMe::_findGroupInsertionIndex( VectorSequence const & chain, size_t max_search_range, int target_value, size_t elements_per_group )
 {
-	int left = 0;
-	int right;
-
-	size_t	range_to_search;
-
-	if (main_chain.size() < main_chain_size)
-		range_to_search = main_chain.size();
-	else
-		range_to_search = main_chain_size;
-
-	right = range_to_search / amount_of_elements_in_pair;
-
-	// std::cout << "lower_bound_index ==============================\n";
-	// PmergeMe pm;
-	// pm.printSequence(main_chain, "main_chain");
-	// std::cout << "target: " << target << std::endl; 
-	// std::cout << "main chain size to search: " << main_chain_size << std::endl;
-
+	int	left = 0;
+	int	right = max_search_range / elements_per_group;
 
 	while (left < right)
 	{
-		int mid = left + (right - left) / 2;
+		int	middle = left + (right - left) / 2;
+		int	middle_value = chain[middle * elements_per_group + elements_per_group - 1];
 
-		// std::cout << "| left: " << left << " | left: " << left << std::endl;
-		// std::cout << "| mid: " << mid << " | mid: " << mid * amount_of_elements_in_pair + amount_of_elements_in_pair - 1 << std::endl;
-		// std::cout << "| right: " << right << " | right: " << right << std::endl;
-		if (main_chain[mid * amount_of_elements_in_pair + amount_of_elements_in_pair - 1] < target)
-			left = mid + 1;
+		if (middle_value < target_value)
+			left = middle + 1;
 		else
-			right = mid;
+			right = middle;
+
 		comparisons++;
-		// std::cout << std::endl;
 	}
 
-	// std::cout << "comparisons: " << comparisons << std::endl;
-	// std::cout << "left: " << left << std::endl;
-	// std::cout << "right: " << right << std::endl;
-	return left * amount_of_elements_in_pair;
+	return left * elements_per_group;
 }
 
-void PmergeMe::_insertWithJacobsthalSequence1( VectorSequence & main_chain, VectorSequence & pending_chain, size_t	smaller_elements_size, size_t amount_of_elements_in_pair )
+void	PmergeMe::_insertPendingGroup( VectorSequence & main_chain, VectorSequence const & pending_chain, int i, size_t amount_of_elements_in_member, size_t group_index )
+{
+		size_t const	group_start = i * amount_of_elements_in_member;
+		size_t const	group_end = group_start + amount_of_elements_in_member;
+
+		size_t const	search_limit = (std::pow(2, group_index) - 1) * amount_of_elements_in_member;
+		size_t const	max_search_range = std::min(main_chain.size(), search_limit);
+
+		size_t const	largest_element_in_group = pending_chain[group_end - 1];
+		size_t const	idx_to_insert = this->_findGroupInsertionIndex(main_chain, max_search_range, largest_element_in_group, amount_of_elements_in_member);
+
+		main_chain.insert(main_chain.begin() + idx_to_insert, pending_chain.begin() + group_start, pending_chain.begin() + group_end);
+}
+
+void	PmergeMe::_insertWithJacobsthalSequence1( VectorSequence & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t amount_of_elements_in_member )
 {
 	VectorSequence	jacobsthal_sequence;
-	this->_generateJacobsthalSequence(jacobsthal_sequence, PmergeMe::MAX_JACOBSTHAL_INDEX, smaller_elements_size);
+	size_t const	pending_chain_members_amount = pending_chain.size() / amount_of_elements_in_member;
 
-	size_t			jacobsthal_sequence_size = jacobsthal_sequence.size();
-	// std::cout << "jacobsthal_sequence_size: " << jacobsthal_sequence_size << std::endl;
+	//! Ford-Johnson algorithm: first insertion searches 2^k-1 = 3 elements
+	size_t	group_index = 2;
 
+	this->_generateJacobsthalSequence(jacobsthal_sequence, PmergeMe::MAX_JACOBSTHAL_INDEX, pending_chain_members_amount);
 
-	for (size_t i = 0; i < jacobsthal_sequence_size; ++i)
+	for (auto it = jacobsthal_sequence.begin(); it != jacobsthal_sequence.end(); ++it)
 	{
-		int	range_start_index = jacobsthal_sequence[i] - 1;
-		int	range_end_index;
-		if (i + 1 >= jacobsthal_sequence_size)
-		{
-			range_end_index = smaller_elements_size;
-		}
-		else
-		{
-			range_end_index = jacobsthal_sequence[i + 1] - 1;
-		}
-		VectorSequence	tt;
+		int const	range_start = *it - 1;
+		int			range_end = pending_chain_members_amount;
 
-		for (int j = range_end_index - 1; j >= range_start_index; --j)
-		{
-			for (size_t k = j * amount_of_elements_in_pair; k <= j * amount_of_elements_in_pair + amount_of_elements_in_pair - 1; k++)
-			{
-				// std::cout << pending_chain[k] << " ";
-				tt.push_back(pending_chain[k]);
-			}
-			// std::cout << std::endl;
-		}
+		if (std::next(it) != jacobsthal_sequence.end())
+			range_end = *std::next(it) - 1;
 
-		// this->printSequence(tt, "tt");
-		// std::cout << "amount_of_elements_in_pair: " << amount_of_elements_in_pair << std::endl;
-		// std::cout << "jacobsthal_sequence[" << i << "]: " << jacobsthal_sequence[i] << std::endl;
-		for (size_t	k = 0; k < tt.size(); k += amount_of_elements_in_pair)
+		for (int i = range_end - 1; i >= range_start; --i)
 		{
-			size_t	left_start = k;
-			size_t	left_end = k + amount_of_elements_in_pair;
-			
-			int idx = lower_bound_index(main_chain, ((std::pow(2, i + 1 + 1) - 1)) * amount_of_elements_in_pair, tt[left_end - 1], amount_of_elements_in_pair);
-			for (size_t left = left_start; left < left_end; ++left)
-			{
-				main_chain.insert(main_chain.begin() + idx, tt[left]);
-				idx++;
-			}
+			this->_insertPendingGroup(main_chain, pending_chain, i, amount_of_elements_in_member, group_index);
 		}
-		tt.clear();
+		group_index++;
+	}
+
+	this->printSequence(main_chain, "\nMain chain after insertion");
+	this->printSequence(pending_chain, "Pending chain after insertion");
+
+	this->printSequence(sequence, "\nSequence before main chain assign");
+
+	this->printSequence(main_chain, "Main chain before assign to sequence");
+	sequence = main_chain;
+	this->printSequence(sequence, "\nSequence after main chain assign");
+}
+
+void	PmergeMe::_sortPairs
+(
+	VectorSequence & sequence,
+	size_t amount_of_members_in_pair,
+	size_t amount_of_elements_in_member,
+	size_t amount_of_elements_to_pair
+)
+{
+	for (
+		size_t	i = 0;
+		i < amount_of_elements_to_pair;
+		i += amount_of_members_in_pair
+	)
+	{
+		size_t const	left_member_start = i;
+		size_t const	left_member_end = left_member_start + amount_of_elements_in_member; //! last element excluded == vector.end()
+		size_t const	right_member_end = left_member_end + amount_of_elements_in_member; //! last element excluded == vector.end()
+
+		if (sequence[left_member_end - 1] > sequence[right_member_end - 1])
+		{
+			std::swap_ranges(
+				sequence.begin() + left_member_start,
+				sequence.begin() + left_member_end,
+				sequence.begin() + left_member_end
+			);
+		}
+		comparisons++;
 	}
 }
 
 void PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_size, size_t recursion_depth )
 {
-	size_t	amount_of_elements_in_pair = 1 << recursion_depth;
-	size_t	amount_of_pairs = sequence_size / amount_of_elements_in_pair;
-	size_t	amount_of_elements_to_pair = amount_of_pairs * amount_of_elements_in_pair;
+	size_t	amount_of_members_in_pair = 1 << recursion_depth;
+	size_t	amount_of_elements_in_member = amount_of_members_in_pair / 2;
+	size_t	amount_of_pairs = sequence_size / amount_of_members_in_pair;
+	size_t	amount_of_elements_to_pair = amount_of_pairs * amount_of_members_in_pair;
 
-	#ifdef DEBUG
-		std::cout << "\nRecursion depth - " << recursion_depth;
-		std::cout << "\nAmount of elements in pair - " << amount_of_elements_in_pair;
-		std::cout << "\nAmount of pairs - " << amount_of_pairs;
-		std::cout << "\nAmount of elements to pair - " << amount_of_elements_to_pair;
-
-		std::cout << "\nSequence size - " << sequence_size;
-
-		std::cout << std::endl;
-		this->printSequence(sequence, "sequence before swap");
-	#endif
-
-	if (sequence_size < amount_of_elements_in_pair)
-		return;
-
-	for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_elements_in_pair)
+	if (amount_of_pairs < 1)
 	{
-		size_t	left_start = i;
-		size_t	left_end = i + amount_of_elements_in_pair / 2;
-		size_t	right_start = left_end;
-		size_t	right_end = right_start + amount_of_elements_in_pair / 2;
-
-		// std::cout << "sequence[left_start]: " << sequence[left_start] << std::endl;
-		// std::cout << "sequence[left_end]: " << sequence[left_end - 1] << std::endl;
-		// std::cout << "sequence[right_start]: " << sequence[right_start] << std::endl;
-		// std::cout << "sequence[right_end]: " << sequence[right_end - 1] << std::endl;
-
-		if (sequence[left_end - 1] > sequence[right_end - 1])
-		{
-			for (size_t left = left_start, right = right_start; left < left_end && right < right_end; ++left, ++right)
-			{
-				std::swap(sequence[left], sequence[right]);
-			}
-		}
-		comparisons++;
-		// std::cout << std::endl;
+		return;
 	}
-	// std::cout << std::endl;
 
-	this->printSequence(sequence, "sequence after swap");
+	std::cout << "\nrecursion_depth - " << recursion_depth;
+	std::cout << "\namount_of_members_in_pair - " << amount_of_members_in_pair;
+	std::cout << "\namount_elements_in_member - " << amount_of_elements_in_member;
+	std::cout << "\namount_of_pairs - " << amount_of_pairs;
+	std::cout << "\namount_of_elements_to_pair - " << amount_of_elements_to_pair;
+	std::cout << "\nsequence_size - " << sequence_size;
+	std::cout << "\ncomparisons: " << comparisons << std::endl;
+	std::cout << "\n" << std::endl;
 
+	this->printSequence(sequence, "Sequence before sorting pairs");
 
-	this->_mergeInsertionSort(sequence, amount_of_elements_to_pair, recursion_depth + 1);
+	std::cout << "Sorting pairs..." << std::endl;
+	this->_sortPairs(sequence, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair);
 
-	// this->printSequence(sequence, "sequence after recursion");
-
+	this->printSequence(sequence, "Sequence after sorting pairs");
 
 	if (amount_of_pairs > 1)
 	{
-		VectorSequence	main_chain;
-		VectorSequence	pending_chain;
-
-		for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_elements_in_pair)
-		{
-			size_t	left_start = i;
-			size_t	left_end = i + amount_of_elements_in_pair / 2;
-			size_t	right_start = left_end;
-			size_t	right_end = right_start + amount_of_elements_in_pair / 2;
-
-			for (size_t left = left_start; left < left_end; ++left)
-			{
-				if (i == 0)
-				{
-					main_chain.push_back(sequence[left]);
-				}
-				else
-				{
-					pending_chain.push_back(sequence[left]);
-				}
-			}
-			for (size_t right = right_start; right < right_end; ++right)
-			{
-				main_chain.push_back(sequence[right]);
-			}
-		}
-
-		for (size_t i = amount_of_elements_to_pair; i < sequence_size; i++)
-		{
-			pending_chain.push_back(sequence[i]);
-		}
-
-		// this->printSequence(main_chain, "before main chain");
-		// this->printSequence(pending_chain, "before pending chain");
-
-		this->_insertWithJacobsthalSequence1(main_chain, pending_chain, pending_chain.size() / (amount_of_elements_in_pair / 2), amount_of_elements_in_pair / 2);
-
-		// this->printSequence(main_chain, "after main chain");
-		// this->printSequence(pending_chain, "after pending chain");
-
-		// this->printSequence(sequence, "1sequence");
-		// this->printSequence(main_chain, "1main chain");
-		sequence = main_chain;
-		// this->printSequence(sequence, "2sequence");
-		// this->printSequence(main_chain, "2main chain");
+		std::cout << "\nEnter recursion [" << recursion_depth + 1 << "]..." << std::endl;
+		this->_mergeInsertionSort(sequence, amount_of_elements_to_pair, recursion_depth + 1);
+		std::cout << "\nExit recursion [" << recursion_depth + 1 << "]...\n" << std::endl;
 	}
-	this->printSequence(sequence, "sorted sequence");
-	// std::cout << "comparisons: " << comparisons << std::endl;
 
+	if (amount_of_pairs < 2 && amount_of_elements_to_pair == sequence_size)
+	{
+		return;
+	}
+
+	VectorSequence	main_chain;
+	VectorSequence	pending_chain;
+
+	this->printSequence(sequence, "Sequence before splitting to chains");
+	std::cout << "sequence_size - " << sequence_size << std::endl;
+
+	std::cout << "\nSplit sequence to chains..." << std::endl;
+	this->_splitToChains(sequence, main_chain, pending_chain, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair, sequence_size);
+
+	this->printSequence(main_chain, "\nMain chain after splitting");
+	this->printSequence(pending_chain, "Pending chain after splitting");
+
+	std::cout << "\nInserting pending chain to main chain..." << std::endl;
+	this->_insertWithJacobsthalSequence1(sequence, main_chain, pending_chain, amount_of_elements_in_member);
+
+	std::cout << "\ncomparisons: " << comparisons << std::endl;
 }
 
-void PmergeMe::_swapTwoElements( VectorSequence & sequence )
+void PmergeMe::_splitToChains
+(
+	VectorSequence const & sequence,
+	VectorSequence & main_chain,
+	VectorSequence & pending_chain,
+	size_t amount_of_members_in_pair,
+	size_t amount_of_elements_in_member,
+	size_t amount_of_elements_to_pair,
+	size_t sequence_size
+)
 {
-	if (sequence[0] > sequence[1])
+	for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_members_in_pair)
 	{
-		std::swap(sequence[0], sequence[1]);
-	}
-}
+		size_t const	left_member_start = i;
+		size_t const	left_member_end = left_member_start + amount_of_elements_in_member; //! last element excluded == vector.end()
+		size_t const	right_member_start = left_member_end;
+		size_t const	right_member_end = right_member_start + amount_of_elements_in_member; //! last element excluded == vector.end()
 
-void PmergeMe::_splitToChains( VectorSequence const & sequence, VectorSequence & larger_elements, VectorSequence & smaller_elements )
-{
-	size_t	pairs = sequence.size() / 2;
-	larger_elements.reserve(pairs);
-	smaller_elements.reserve(pairs + (sequence.size() % 2));
-
-	for (VectorSequence::const_iterator curr_it = sequence.begin(); curr_it < sequence.end(); curr_it += 2)
-	{
-		VectorSequence::const_iterator	next_it = std::next(curr_it);
-
-		if (next_it == sequence.end())
+		if (i != 0)
 		{
-			break;
+			//! Push rest smaller elements to pending chain
+			pending_chain.insert(pending_chain.end(), sequence.begin() + left_member_start, sequence.begin() + left_member_end);
+		}
+		else
+		{
+			//! Push first smaller elements to main chain
+			main_chain.insert(main_chain.end(), sequence.begin() + left_member_start, sequence.begin() + left_member_end);
 		}
 
-		int first = *curr_it;
-		int second = *next_it;
-		int larger = std::max(first, second);
-		int smaller = std::min(first, second);
-
-		larger_elements.push_back(larger);
-		smaller_elements.push_back(smaller);
+		//! Push larger elements to main chain
+		main_chain.insert(main_chain.end(), sequence.begin() + right_member_start, sequence.begin() + right_member_end);
 	}
 
-	if (sequence.size() % 2 != 0)
-		smaller_elements.push_back(sequence.back());
+	//! Push leftover elements to main chain
+	pending_chain.insert(pending_chain.end(), sequence.begin() + amount_of_elements_to_pair, sequence.begin() + sequence_size);
 }
 
 void	PmergeMe::_generateJacobsthalSequence( PmergeMe::VectorSequence & sequence, int n, int c )
