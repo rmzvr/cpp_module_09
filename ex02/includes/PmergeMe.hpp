@@ -21,20 +21,18 @@ class PmergeMe
 		PmergeMe &	operator=( PmergeMe const & other );
 		~PmergeMe();
 
-		void	sort( VectorSequence & sequence );
-		void	sort( ListSequence & sequence );
+		template < typename T >
+		void	sort( T & sequence );
 
-		// Utility functions - Vector
-		void	printSequence( VectorSequence const & sequence, std::string const & label ) const;
-		void	printTime( VectorSequence const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const;
-		bool	verifySorted( VectorSequence const & sequence ) const;
-		std::chrono::duration<double, std::micro>	sortAndMeasureTime( VectorSequence & sequence );
-
-		// Utility functions - List
-		void	printSequence( ListSequence const & sequence, std::string const & label ) const;
-		void	printTime( ListSequence const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const;
-		bool	verifySorted( ListSequence const & sequence ) const;
-		std::chrono::duration<double, std::micro>	sortAndMeasureTime( ListSequence & sequence );
+		// Utility functions
+		template < typename T >
+		void	printSequence( T const & sequence, std::string const & label ) const;
+		template < typename T >
+		void	printTime( T const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const;
+		template < typename T >
+		bool	verifySorted( T const & sequence ) const;
+		template < typename T >
+		std::chrono::duration<double, std::micro>	sortAndMeasureTime( T & sequence );
 
 		// Static utility
 		static int	parseArgument( char *argument );
@@ -74,7 +72,56 @@ class PmergeMe
 		size_t	_findGroupInsertionIndex( ListSequence const & chain, size_t max_search_range, int target_value, size_t elements_per_group );
 
 		// Utility helpers
-		void	_printNumbers( VectorSequence const & sequence ) const;
-		void	_printNumbers( ListSequence const & sequence ) const;
-
+		template < typename T >
+		void	_printNumbers( T const & sequence ) const;
 };
+
+template < typename T >
+void PmergeMe::sort( T & sequence )
+{
+	size_t	group_level = 1;
+
+	this->_mergeInsertionSort(sequence, sequence.size(), group_level);
+}
+
+template < typename T >
+void PmergeMe::printSequence( T const & sequence, std::string const & label ) const
+{
+	std::cout << label << ": ";
+	this->_printNumbers(sequence);
+}
+
+template < typename T >
+void PmergeMe::printTime( T const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const
+{
+	std::cout << std::fixed << std::setprecision(5);
+	std::cout << "Time to process a range of " << sequence.size() 
+				<< " elements with " << containerName << " : " 
+				<< duration.count() << " us" << std::endl;
+}
+
+template < typename T >
+bool PmergeMe::verifySorted( T const & sequence ) const
+{
+	return std::is_sorted(sequence.begin(), sequence.end());
+}
+
+template < typename T >
+std::chrono::duration<double, std::micro> PmergeMe::sortAndMeasureTime( T & sequence )
+{
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	this->sort(sequence);
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	
+	return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(end - start);
+}
+
+template < typename T >
+void PmergeMe::_printNumbers( T const & sequence ) const
+{
+	for (auto it = sequence.begin(); it != sequence.end(); ++it)
+	{
+		std::cout << *it << " ";
+	}
+	std::cout << std::endl;
+}
