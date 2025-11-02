@@ -26,79 +26,6 @@ PmergeMe &	PmergeMe::operator=( PmergeMe const & other )
 PmergeMe::~PmergeMe()
 {}
 
-void PmergeMe::sort( VectorSequence & sequence )
-{
-	size_t	group_level = 1;
-
-	this->_mergeInsertionSort(sequence, sequence.size(), group_level);
-}
-
-void PmergeMe::sort( ListSequence & sequence )
-{
-	size_t	group_level = 1;
-
-	this->_mergeInsertionSort(sequence, sequence.size(), group_level);
-}
-
-// Utility functions - Vector
-void PmergeMe::printSequence( VectorSequence const & sequence, std::string const & label ) const
-{
-	std::cout << label << ": ";
-	this->_printNumbers(sequence);
-}
-
-void PmergeMe::printTime( VectorSequence const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const
-{
-	std::cout << std::fixed << std::setprecision(5);
-	std::cout << "Time to process a range of " << sequence.size() 
-				<< " elements with " << containerName << " : " 
-				<< duration.count() << " us" << std::endl;
-}
-
-bool PmergeMe::verifySorted( VectorSequence const & sequence ) const
-{
-	return std::is_sorted(sequence.begin(), sequence.end());
-}
-
-std::chrono::duration<double, std::micro> PmergeMe::sortAndMeasureTime( VectorSequence & sequence )
-{
-	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-	this->sort(sequence);
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	
-	return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(end - start);
-}
-
-// Utility functions - List
-void PmergeMe::printSequence( ListSequence const & sequence, std::string const & label ) const
-{
-	std::cout << label << ": ";
-	this->_printNumbers(sequence);
-	std::cout << std::endl;
-}
-
-void PmergeMe::printTime( ListSequence const & sequence, std::chrono::duration<double, std::micro> const & duration, std::string const & containerName ) const
-{
-	std::cout << std::fixed << std::setprecision(5);
-	std::cout << "Time to process a range of " << sequence.size() 
-				<< " elements with " << containerName << " : " 
-				<< duration.count() << " us" << std::endl;
-}
-
-bool PmergeMe::verifySorted( ListSequence const & sequence ) const
-{
-	return std::is_sorted(sequence.begin(), sequence.end());
-}
-
-std::chrono::duration<double, std::micro> PmergeMe::sortAndMeasureTime( ListSequence & sequence )
-{
-	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-	this->sort(sequence);
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	
-	return end - start;
-}
-
 // Static utility function
 
 int PmergeMe::parseArgument( char *argument )
@@ -142,7 +69,7 @@ int PmergeMe::getExpectedComparisons( int n )
 	// F(n) ≤ n⌈lg n⌉ - 2^⌈lg n⌉ + 1
 	if (n > 33)
 	{
-		int lg_n = static_cast<int>(std::ceil(std::log2(n)));
+		int	lg_n = static_cast<int>(std::ceil(std::log2(n)));
 		return n * lg_n - (1 << lg_n) + 1;
 	}
 	
@@ -180,22 +107,22 @@ int PmergeMe::getComparisons()
 
 void	PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_size, size_t group_level )
 {
-	size_t const	amount_of_members_in_pair = 1 << group_level;
-	size_t const	amount_of_elements_in_member = amount_of_members_in_pair / 2;
-	size_t const	amount_of_pairs = sequence_size / amount_of_members_in_pair;
-	size_t const	amount_of_elements_to_pair = amount_of_pairs * amount_of_members_in_pair;
+	size_t const	pair_size = 1 << group_level;
+	size_t const	member_size = pair_size / 2;
+	size_t const	pair_count = sequence_size / pair_size;
+	size_t const	paired_elements = pair_count * pair_size;
 
-	if (amount_of_pairs < 1)
+	if (pair_count < 1)
 	{
 		return;
 	}
 
 	#ifdef DEBUG
 		std::cout << "\ngroup_level - " << group_level;
-		std::cout << "\namount_of_members_in_pair - " << amount_of_members_in_pair;
-		std::cout << "\namount_elements_in_member - " << amount_of_elements_in_member;
-		std::cout << "\namount_of_pairs - " << amount_of_pairs;
-		std::cout << "\namount_of_elements_to_pair - " << amount_of_elements_to_pair;
+		std::cout << "\npair_size - " << pair_size;
+		std::cout << "\namount_elements_in_member - " << member_size;
+		std::cout << "\npair_count - " << pair_count;
+		std::cout << "\npaired_elements - " << paired_elements;
 		std::cout << "\nsequence_size - " << sequence_size;
 		std::cout << "\n" << std::endl;
 
@@ -204,26 +131,26 @@ void	PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_s
 		std::cout << "Sorting pairs..." << std::endl;
 	#endif
 
-	this->_sortPairs(sequence, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair);
+	this->_sortPairs(sequence, pair_size, member_size, paired_elements);
 
 	#ifdef DEBUG
 		this->printSequence(sequence, "Sequence after sorting pairs");
 	#endif
 
-	if (amount_of_pairs > 1)
+	if (pair_count > 1)
 	{
 		#ifdef DEBUG
 			std::cout << "\nEnter recursion [" << group_level + 1 << "]..." << std::endl;
 		#endif
 
-		this->_mergeInsertionSort(sequence, amount_of_elements_to_pair, group_level + 1);
+		this->_mergeInsertionSort(sequence, paired_elements, group_level + 1);
 
 		#ifdef DEBUG
 			std::cout << "\nExit recursion [" << group_level + 1 << "]..." << std::endl;
 		#endif
 	}
 
-	if (amount_of_pairs < 2 && amount_of_elements_to_pair == sequence_size)
+	if (pair_count < 2 && paired_elements == sequence_size)
 	{
 		return;
 	}
@@ -242,7 +169,7 @@ void	PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_s
 		std::cout << "\nSplit sequence to chains..." << std::endl;
 	#endif
 
-	this->_splitToChains(sequence, main_chain, pending_chain, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair, sequence_size);
+	this->_splitToChains(sequence, main_chain, pending_chain, pair_size, member_size, paired_elements, sequence_size);
 
 	#ifdef DEBUG
 		this->printSequence(main_chain, "\nMain chain after splitting");
@@ -251,20 +178,20 @@ void	PmergeMe::_mergeInsertionSort( VectorSequence & sequence, size_t sequence_s
 		std::cout << "\nInserting pending chain to main chain..." << std::endl;
 	#endif
 
-	this->_insertPendingGroupsWithJacobsthal(sequence, main_chain, pending_chain, amount_of_elements_in_member);
+	this->_insertPendingGroupsWithJacobsthal(sequence, main_chain, pending_chain, member_size);
 }
 
-void	PmergeMe::_sortPairs( VectorSequence & sequence, size_t amount_of_members_in_pair, size_t amount_of_elements_in_member, size_t amount_of_elements_to_pair)
+void	PmergeMe::_sortPairs( VectorSequence & sequence, size_t pair_size, size_t member_size, size_t paired_elements)
 {
 	for (
 		size_t	i = 0;
-		i < amount_of_elements_to_pair;
-		i += amount_of_members_in_pair
+		i < paired_elements;
+		i += pair_size
 	)
 	{
 		size_t const	left_member_start = i;
-		size_t const	left_member_end = left_member_start + amount_of_elements_in_member;
-		size_t const	right_member_end = left_member_end + amount_of_elements_in_member;
+		size_t const	left_member_end = left_member_start + member_size;
+		size_t const	right_member_end = left_member_end + member_size;
 
 		if (sequence[left_member_end - 1] > sequence[right_member_end - 1])
 		{
@@ -278,14 +205,14 @@ void	PmergeMe::_sortPairs( VectorSequence & sequence, size_t amount_of_members_i
 	}
 }
 
-void	PmergeMe::_splitToChains(VectorSequence const & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t amount_of_members_in_pair, size_t amount_of_elements_in_member, size_t amount_of_elements_to_pair, size_t sequence_size)
+void	PmergeMe::_splitToChains(VectorSequence const & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t pair_size, size_t member_size, size_t paired_elements, size_t sequence_size)
 {
-	for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_members_in_pair)
+	for (size_t	i = 0; i < paired_elements; i += pair_size)
 	{
 		size_t const	left_member_start = i;
-		size_t const	left_member_end = left_member_start + amount_of_elements_in_member;
+		size_t const	left_member_end = left_member_start + member_size;
 		size_t const	right_member_start = left_member_end;
-		size_t const	right_member_end = right_member_start + amount_of_elements_in_member;
+		size_t const	right_member_end = right_member_start + member_size;
 
 		if (i == 0)
 		{
@@ -303,13 +230,13 @@ void	PmergeMe::_splitToChains(VectorSequence const & sequence, VectorSequence & 
 	}
 
 	//! Push leftover elements to main chain
-	pending_chain.insert(pending_chain.end(), sequence.begin() + amount_of_elements_to_pair, sequence.begin() + sequence_size);
+	pending_chain.insert(pending_chain.end(), sequence.begin() + paired_elements, sequence.begin() + sequence_size);
 }
 
-void	PmergeMe::_insertPendingGroupsWithJacobsthal( VectorSequence & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t amount_of_elements_in_member )
+void	PmergeMe::_insertPendingGroupsWithJacobsthal( VectorSequence & sequence, VectorSequence & main_chain, VectorSequence & pending_chain, size_t member_size )
 {
 	VectorSequence	jacobsthal_sequence;
-	size_t const	pending_chain_members_amount = pending_chain.size() / amount_of_elements_in_member;
+	size_t const	pending_chain_members_amount = pending_chain.size() / member_size;
 
 	//! Ford-Johnson algorithm: first insertion searches 2^k-1 = 3 elements
 	size_t	group_index = 2;
@@ -326,7 +253,7 @@ void	PmergeMe::_insertPendingGroupsWithJacobsthal( VectorSequence & sequence, Ve
 
 		for (int i = range_end - 1; i >= range_start; --i)
 		{
-			this->_insertPendingGroup(main_chain, pending_chain, i, amount_of_elements_in_member, group_index);
+			this->_insertPendingGroup(main_chain, pending_chain, i, member_size, group_index);
 		}
 		group_index++;
 	}
@@ -361,16 +288,16 @@ void	PmergeMe::_generateJacobsthalSequence( PmergeMe::VectorSequence & sequence,
 	}
 }
 
-void	PmergeMe::_insertPendingGroup( VectorSequence & main_chain, VectorSequence const & pending_chain, int i, size_t amount_of_elements_in_member, size_t group_index )
+void	PmergeMe::_insertPendingGroup( VectorSequence & main_chain, VectorSequence const & pending_chain, int i, size_t member_size, size_t group_index )
 {
-	size_t const	group_start = i * amount_of_elements_in_member;
-	size_t const	group_end = group_start + amount_of_elements_in_member;
+	size_t const	group_start = i * member_size;
+	size_t const	group_end = group_start + member_size;
 
-	size_t const	search_limit = (std::pow(2, group_index) - 1) * amount_of_elements_in_member;
+	size_t const	search_limit = (std::pow(2, group_index) - 1) * member_size;
 	size_t const	max_search_range = std::min(main_chain.size(), search_limit);
 
 	size_t const	largest_element_in_group = pending_chain[group_end - 1];
-	size_t const	idx_to_insert = this->_findGroupInsertionIndex(main_chain, max_search_range, largest_element_in_group, amount_of_elements_in_member);
+	size_t const	idx_to_insert = this->_findGroupInsertionIndex(main_chain, max_search_range, largest_element_in_group, member_size);
 
 	main_chain.insert(main_chain.begin() + idx_to_insert, pending_chain.begin() + group_start, pending_chain.begin() + group_end);
 }
@@ -396,39 +323,26 @@ size_t	PmergeMe::_findGroupInsertionIndex( VectorSequence const & chain, size_t 
 	return left * elements_per_group;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Sorting - List
 
 void	PmergeMe::_mergeInsertionSort( ListSequence & sequence, size_t sequence_size, size_t group_level )
 {
-	size_t const	amount_of_members_in_pair = 1 << group_level;
-	size_t const	amount_of_elements_in_member = amount_of_members_in_pair / 2;
-	size_t const	amount_of_pairs = sequence_size / amount_of_members_in_pair;
-	size_t const	amount_of_elements_to_pair = amount_of_pairs * amount_of_members_in_pair;
+	size_t const	pair_size = 1 << group_level;
+	size_t const	member_size = pair_size / 2;
+	size_t const	pair_count = sequence_size / pair_size;
+	size_t const	paired_elements = pair_count * pair_size;
 
-	if (amount_of_pairs < 1)
+	if (pair_count < 1)
 	{
 		return;
 	}
 
 	#ifdef DEBUG
 		std::cout << "\ngroup_level - " << group_level;
-		std::cout << "\namount_of_members_in_pair - " << amount_of_members_in_pair;
-		std::cout << "\namount_elements_in_member - " << amount_of_elements_in_member;
-		std::cout << "\namount_of_pairs - " << amount_of_pairs;
-		std::cout << "\namount_of_elements_to_pair - " << amount_of_elements_to_pair;
+		std::cout << "\npair_size - " << pair_size;
+		std::cout << "\namount_elements_in_member - " << member_size;
+		std::cout << "\npair_count - " << pair_count;
+		std::cout << "\npaired_elements - " << paired_elements;
 		std::cout << "\nsequence_size - " << sequence_size;
 		std::cout << "\n" << std::endl;
 
@@ -437,26 +351,26 @@ void	PmergeMe::_mergeInsertionSort( ListSequence & sequence, size_t sequence_siz
 		std::cout << "Sorting pairs..." << std::endl;
 	#endif
 
-	this->_sortPairs(sequence, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair);
+	this->_sortPairs(sequence, pair_size, member_size, paired_elements);
 
 	#ifdef DEBUG
 		this->printSequence(sequence, "Sequence after sorting pairs");
 	#endif
 
-	if (amount_of_pairs > 1)
+	if (pair_count > 1)
 	{
 		#ifdef DEBUG
 			std::cout << "\nEnter recursion [" << group_level + 1 << "]..." << std::endl;
 		#endif
 
-		this->_mergeInsertionSort(sequence, amount_of_elements_to_pair, group_level + 1);
+		this->_mergeInsertionSort(sequence, paired_elements, group_level + 1);
 
 		#ifdef DEBUG
 			std::cout << "\nExit recursion [" << group_level + 1 << "]..." << std::endl;
 		#endif
 	}
 
-	if (amount_of_pairs < 2 && amount_of_elements_to_pair == sequence_size)
+	if (pair_count < 2 && paired_elements == sequence_size)
 	{
 		return;
 	}
@@ -471,7 +385,7 @@ void	PmergeMe::_mergeInsertionSort( ListSequence & sequence, size_t sequence_siz
 		std::cout << "\nSplit sequence to chains..." << std::endl;
 	#endif
 
-	this->_splitToChains(sequence, main_chain, pending_chain, amount_of_members_in_pair, amount_of_elements_in_member, amount_of_elements_to_pair, sequence_size);
+	this->_splitToChains(sequence, main_chain, pending_chain, pair_size, member_size, paired_elements, sequence_size);
 
 	#ifdef DEBUG
 		this->printSequence(main_chain, "\nMain chain after splitting");
@@ -480,43 +394,43 @@ void	PmergeMe::_mergeInsertionSort( ListSequence & sequence, size_t sequence_siz
 		std::cout << "\nInserting pending chain to main chain..." << std::endl;
 	#endif
 
-	this->_insertPendingGroupsWithJacobsthal(sequence, main_chain, pending_chain, amount_of_elements_in_member);
+	this->_insertPendingGroupsWithJacobsthal(sequence, main_chain, pending_chain, member_size);
 }
 
-void	PmergeMe::_sortPairs( ListSequence & sequence, size_t amount_of_members_in_pair, size_t amount_of_elements_in_member, size_t amount_of_elements_to_pair )
+void	PmergeMe::_sortPairs( ListSequence & sequence, size_t pair_size, size_t member_size, size_t paired_elements )
 {
 	auto	current = sequence.begin();
 
-	for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_members_in_pair)
+	for (size_t	i = 0; i < paired_elements; i += pair_size)
 	{
-		auto	last_left_members_element = std::next(current, amount_of_elements_in_member - 1);
-		auto	last_right_members_element = std::next(last_left_members_element, amount_of_elements_in_member);
+		auto	last_left_members_element = std::next(current, member_size - 1);
+		auto	last_right_members_element = std::next(last_left_members_element, member_size);
 
 		if (*last_left_members_element > *last_right_members_element)
 		{
 			auto	left_member_start = current;
-			auto	right_member_start = std::next(left_member_start, amount_of_elements_in_member);
+			auto	right_member_start = std::next(left_member_start, member_size);
 
-			for (size_t j = 0; j < amount_of_elements_in_member; ++j)
+			for (size_t j = 0; j < member_size; ++j)
 			{
 				std::iter_swap(left_member_start++, right_member_start++);
 			}
 		}
 		PmergeMe::incrementComparisons();
-		std::advance(current, amount_of_members_in_pair);
+		std::advance(current, pair_size);
 	}
 }
 
-void	PmergeMe::_splitToChains( ListSequence const & sequence, ListSequence & main_chain, ListSequence & pending_chain, size_t amount_of_members_in_pair, size_t amount_of_elements_in_member, size_t amount_of_elements_to_pair, size_t sequence_size )
+void	PmergeMe::_splitToChains( ListSequence const & sequence, ListSequence & main_chain, ListSequence & pending_chain, size_t pair_size, size_t member_size, size_t paired_elements, size_t sequence_size )
 {
 	auto	current = sequence.begin();
 
-	for (size_t	i = 0; i < amount_of_elements_to_pair; i += amount_of_members_in_pair)
+	for (size_t	i = 0; i < paired_elements; i += pair_size)
 	{
 		auto	left_member_start = current;
-		auto	left_member_end = std::next(current, amount_of_elements_in_member);
+		auto	left_member_end = std::next(current, member_size);
 		auto	right_member_start = left_member_end;
-		auto	right_member_end = std::next(right_member_start, amount_of_elements_in_member);
+		auto	right_member_end = std::next(right_member_start, member_size);
 
 		if (i == 0)
 		{
@@ -536,17 +450,17 @@ void	PmergeMe::_splitToChains( ListSequence const & sequence, ListSequence & mai
 	}
 
 	//! Push leftover elements to pending chain
-	if (amount_of_elements_to_pair < sequence_size)
+	if (paired_elements < sequence_size)
 	{
-		auto	leftover_start = std::next(sequence.begin(), amount_of_elements_to_pair);
+		auto	leftover_start = std::next(sequence.begin(), paired_elements);
 		pending_chain.insert(pending_chain.end(), leftover_start, std::next(sequence.begin(), sequence_size));
 	}
 }
 
-void	PmergeMe::_insertPendingGroupsWithJacobsthal( ListSequence & sequence, ListSequence & main_chain, ListSequence & pending_chain, size_t amount_of_elements_in_member )
+void	PmergeMe::_insertPendingGroupsWithJacobsthal( ListSequence & sequence, ListSequence & main_chain, ListSequence & pending_chain, size_t member_size )
 {
 	ListSequence	jacobsthal_sequence;
-	size_t const	pending_chain_members_amount = pending_chain.size() / amount_of_elements_in_member;
+	size_t const	pending_chain_members_amount = pending_chain.size() / member_size;
 
 	//! Ford-Johnson algorithm: first insertion searches 2^k-1 = 3 elements
 	size_t	group_index = 2;
@@ -563,7 +477,7 @@ void	PmergeMe::_insertPendingGroupsWithJacobsthal( ListSequence & sequence, List
 
 		for (int i = range_end - 1; i >= range_start; --i)
 		{
-			this->_insertPendingGroup(main_chain, pending_chain, i, amount_of_elements_in_member, group_index);
+			this->_insertPendingGroup(main_chain, pending_chain, i, member_size, group_index);
 		}
 		group_index++;
 	}
@@ -577,7 +491,6 @@ void	PmergeMe::_insertPendingGroupsWithJacobsthal( ListSequence & sequence, List
 		this->printSequence(main_chain, "Main chain before assign to sequence");
 	#endif
 
-	// For list, copy elements in place instead of replacing the entire list
 	auto seq_it = sequence.begin();
 	auto main_it = main_chain.begin();
 	while (main_it != main_chain.end() && seq_it != sequence.end())
@@ -608,16 +521,16 @@ void	PmergeMe::_generateJacobsthalSequence( PmergeMe::ListSequence & sequence, i
 	}
 }
 
-void	PmergeMe::_insertPendingGroup( ListSequence & main_chain, ListSequence const & pending_chain, int i, size_t amount_of_elements_in_member, size_t group_index )
+void	PmergeMe::_insertPendingGroup( ListSequence & main_chain, ListSequence const & pending_chain, int i, size_t member_size, size_t group_index )
 {
-	auto			group_start = std::next(pending_chain.begin(), i * amount_of_elements_in_member);
-	auto			group_end = std::next(group_start, amount_of_elements_in_member);
+	auto			group_start = std::next(pending_chain.begin(), i * member_size);
+	auto			group_end = std::next(group_start, member_size);
 
-	size_t const	search_limit = (std::pow(2, group_index) - 1) * amount_of_elements_in_member;
+	size_t const	search_limit = (std::pow(2, group_index) - 1) * member_size;
 	size_t const	max_search_range = std::min(main_chain.size(), search_limit);
 
 	size_t const	largest_element_in_group = *std::prev(group_end);
-	size_t const	index_to_insert = this->_findGroupInsertionIndex(main_chain, max_search_range, largest_element_in_group, amount_of_elements_in_member);
+	size_t const	index_to_insert = this->_findGroupInsertionIndex(main_chain, max_search_range, largest_element_in_group, member_size);
 
 	auto			insertion_position = std::next(main_chain.begin(), index_to_insert);
 	main_chain.insert(insertion_position, group_start, group_end);
@@ -643,23 +556,4 @@ size_t	PmergeMe::_findGroupInsertionIndex( ListSequence const & chain, size_t ma
 	}
 
 	return left * elements_per_group;
-}
-
-
-// Utility helpers
-void PmergeMe::_printNumbers( VectorSequence const & sequence ) const
-{
-	for (VectorSequence::const_iterator it = sequence.begin(); it != sequence.end(); ++it)
-	{
-		std::cout << *it << " ";
-	}
-	std::cout << std::endl; //! REMOVE
-}
-
-void PmergeMe::_printNumbers( ListSequence const & sequence ) const
-{
-	for (ListSequence::const_iterator it = sequence.begin(); it != sequence.end(); ++it)
-	{
-		std::cout << *it << " ";
-	}
 }
