@@ -68,7 +68,7 @@ int RPN::_performOperation( char op, int b, int a )
 		return b - a;
 	else if (op == '*')
 		return b * a;
-	else if (op == '/')
+	else
 		return b / a;
 }
 
